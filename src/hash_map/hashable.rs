@@ -13,7 +13,7 @@ pub fn default_hash<T>(to_hash: &T) -> usize {
             (to_hash as *const T) as *const Wrapping<u8>,
             std::mem::size_of::<T>(),
         );
-        
+
         for byte in bytes {
             hash = ((hash << 5) + hash) + Wrapping(byte.0 as usize);
         }
@@ -28,7 +28,6 @@ pub trait Hashable {
     /// Returns the hash code of this data
     fn hash_code(&self) -> usize;
 }
-
 
 impl Hashable for String {
     /// # `hash_code`

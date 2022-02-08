@@ -11,7 +11,7 @@ pub struct Map<Key, Value> {
 impl<Key, Value> Map<Key, Value>
 where
     Key: Clone + PartialEq + Hashable,
-    Value: Clone + Copy + PartialEq,
+    Value: Clone + PartialEq,
 {
     /// # `new`
     /// Create a new empty Map with the initial size of 31.
@@ -87,7 +87,7 @@ where
                         // Found an item
                         if item.key == key {
                             // Found the item
-                            let value = item.value;
+                            let value = item.value.clone();
                             self.buckets[vec_idx] = SlotStatus::Removed;
                             self.size -= 1;
                             return Ok(value);
@@ -100,6 +100,31 @@ where
 
         // This really should never happen but just in case
         Err("Unknown error occured")
+    }
+
+    /// # `get`
+    /// Returns the value stored at the given key as `Option<Value>`. `None` is returned if the key is not available
+    pub fn get(&self, key: Key) -> Option<Value> {
+        let hash = key.hash_code() % self.buckets.len();
+
+        // Linear probing starts
+        for idx in 0..self.buckets.len() {
+            let vec_idx = (hash + idx) % self.buckets.len();
+
+            if let Some(slot) = self.buckets.get(vec_idx) {
+                match slot {
+                    SlotStatus::Empty => return None,
+                    SlotStatus::Occupied(item) => {
+                        if item.key == key {
+                            return Some(item.value.clone());
+                        }
+                    }
+                    SlotStatus::Removed => {}
+                }
+            }
+        }
+
+        None
     }
 
     /// # `resize`
@@ -121,7 +146,10 @@ where
 
                     if let Some(new_slot) = new_bucket.get(vec_idx) {
                         if let SlotStatus::Empty = new_slot {
-                            new_bucket[vec_idx] = SlotStatus::Occupied(Element::new(item.key.clone(), item.value));
+                            new_bucket[vec_idx] = SlotStatus::Occupied(Element::new(
+                                item.key.clone(),
+                                item.value.clone(),
+                            ));
                             break;
                         }
                     }
@@ -136,11 +164,12 @@ where
 
     /// # 'size_control`
     /// Checks whether the Map requires resizing and does so if the requirements are met.
-    fn size_control(&mut self) -> Result<(), &'static str> { // This method might be wack. I've written my reasoning in the README
+    fn size_control(&mut self) -> Result<(), &'static str> {
+        // This method might be wack. I've written my reasoning in the README
         // Check if current size is bigger than ~75% max of size. Using a performance light method (I hope) read README for math :D
         let max = self.buckets.len();
         let margin = self.size > (max >> 1) + (max >> 2);
-        
+
         if margin {
             println!("RESIZE");
             return self.resize(max * 2 - 1);

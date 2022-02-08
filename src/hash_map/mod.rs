@@ -1,5 +1,5 @@
 mod hashable;
-mod table;
+mod map;
 
 #[derive(Clone, Copy, Debug)]
 /// # `SlotStatus<T>`
@@ -7,7 +7,9 @@ mod table;
 /// If The status is Removed, then that slot used to hold a value that now is removed. This helps the linear probing and ensures searching is correct.
 /// If the status is Empty then that slot i
 pub enum SlotStatus<T> {
-    Occupied(T), Removed, Empty
+    Occupied(T),
+    Removed,
+    Empty,
 }
 
 /// # `Element`
@@ -18,13 +20,16 @@ pub struct Element<Key, Value> {
     pub key: Key,
 }
 
-impl<Key, Value> Element<Key, Value> where Key: Clone + PartialEq + Hashable, Value: Clone + {
+impl<Key, Value> Element<Key, Value>
+where
+    Key: Clone + PartialEq + Hashable,
+    Value: Clone,
+{
     /// # `new`
     /// Creates a new Element using the given `Key` and `Value`
     pub fn new(key: Key, value: Value) -> Element<Key, Value> {
-        Element {key, value}
+        Element { key, value }
     }
 }
 
-
-pub use {hashable::{Hashable}, table::Map};
+pub use {hashable::Hashable, map::Map};

@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 use super::Table;
 
 pub fn query(table: &mut Table, query: &String) -> Result<(), &'static str> {
@@ -44,6 +42,8 @@ pub fn query(table: &mut Table, query: &String) -> Result<(), &'static str> {
             .map(|data| data.to_string())
             .collect();
         table.new_row(row_name, content)?;
+    } else if query.starts_with("SAVE") {
+        table.save()?;
     }
 
     Err("No such command")

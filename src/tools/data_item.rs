@@ -16,9 +16,13 @@ pub enum DataItem {
 }
 
 impl DataItem {
-    /// # `same_type_as`
-    /// Returns true if the given `DataItem` has the same type (Rust's Variant) as this `DataItem`
-    pub fn same_type_as(&self, other: &DataItem) -> bool {
-        std::mem::discriminant(self) == std::mem::discriminant(other)
+    pub fn to_string(&self) -> String {
+        match &self {
+            DataItem::Boolean(e) => e.to_string(),
+            DataItem::UInteger(e) => e.to_string(),
+            DataItem::Integer(e) => e.to_string(),
+            DataItem::Float(e) => e.to_string(),
+            DataItem::Word(e) => e.to_string()
+        }
     }
 }

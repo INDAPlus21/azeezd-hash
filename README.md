@@ -9,6 +9,25 @@ Querying can be done through the commands below:
 | `SET <column>=<value> OF <row>`| Sets the given data columns to the given values of a single given row         | `SET Age=10, Program=CDATE OF Bob`     |
 | `INSERT <row_name> : <value>, <value>...`| Inserts a new row into the table using the given data. NOTE! The data must be given in order according to the header and must be in the correct type. | `INSERT Bilbo : 111, CDATE` |
 | `DELETE <row_name>` | Deletes the row with the given row name` | `DELETE Bobby` |
+| `SAVE`              | Not technically a query. This command saves the table into the table it was opened from|
+
+# Creating your own table
+To create your own table, create a `.csv` file (it can be anything really but the file will be in "Comma Separated Values"-format, so be conventional).
+
+Open your newly created file and add your desired header following these:
+
+Each value (separated by a comma) in the header represents a column in the table and should have the format `<type>:<name>`, where type is a single character representing the type of data stored in that column. The following table shows what characters represent what
+
+| Character | Data type |
+|---        |---        |
+| `w`       | Word, a string without any spaces |
+| `u`       | Unsigned 32-bit integer|
+| `i`       | Signed 32-bit integer|
+| `f`       | 32-bit floating-point number|
+| `b`       | Boolean | 
+
+An example of a header is: `w:Class, u:Mana, f:Speed`. Another example is under [`./tables`](./tables/)
+
 # Mathy math
 ## Formula for size checking
 The Map's *max* is the length of the internal vector (buckets). It also has a field called *size* which is the amount of occupied slots inside that internal vector.

@@ -17,6 +17,7 @@ Querying can be done through the commands below:
 | `INSERT <row_name> : <value>, <value>...`| Inserts a new row into the table using the given data. NOTE! The data must be given in order according to the header and must be in the correct type. | `INSERT Bilbo : 111, CDATE` |
 | `DELETE <row_name>` | Deletes the row with the given row name` | `DELETE Bobby` |
 | `SAVE`              | Not technically a query. This command saves the table into the table it was opened from|
+| `ABORT`              | This command will terminate the process without saving. Use with caution if you do not want to lose unsaved progress. |
 
 # Creating your own table
 To create your own table, create a `.csv` file (it can be anything really but the file will be in "Comma Separated Values"-format, so be conventional).

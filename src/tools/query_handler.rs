@@ -18,6 +18,7 @@ pub fn query(table: &mut Table, query: &String) -> Result<(), &'static str> {
         // Search the table for results then print it
         let result = table.get(&args[0], &args[1]);
         println!("{:?}", result);
+        return Ok(());
 
     // === SET ===
     } else if query.starts_with("SET") {
@@ -76,6 +77,9 @@ pub fn query(table: &mut Table, query: &String) -> Result<(), &'static str> {
         table.save()?;
         println!("Saved!");
         return Ok(());
+    } else if query.starts_with("ABORT") {
+        println!("Quitted without saving table");
+        std::process::exit(0);
     }
 
     Err("No such command")

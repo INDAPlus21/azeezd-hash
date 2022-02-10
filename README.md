@@ -1,5 +1,12 @@
 # Azeez Daoud - Database Database Wow wow!
 
+# Running
+To run the database on your table write (while in this directory):
+
+```
+cargo run <table_file_path>
+```
+For example running the sample table under [`./tables`](./tables/) write `cargo run ./tables/students.csv`
 # Querying
 Querying can be done through the commands below:
 

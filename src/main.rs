@@ -11,6 +11,7 @@ fn main() {
         return;
     } 
     if let Ok(mut table) = Table::new(args.nth(1).unwrap()) {
+        println!("Table opened!");
         let input = std::io::stdin();
         let mut buffer = String::new();
         loop {

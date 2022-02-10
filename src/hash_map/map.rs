@@ -6,6 +6,8 @@ use super::*;
 pub struct Map<Key, Value> {
     buckets: Vec<SlotStatus<Element<Key, Value>>>,
     size: usize,
+    keys: Vec<Key>,
+    updated: bool
 }
 
 impl<Key, Value> Map<Key, Value>
@@ -19,6 +21,8 @@ where
         Map {
             buckets: vec![SlotStatus::Empty; 31],
             size: 0,
+            keys: Vec::with_capacity(31),
+            updated: true
         }
     }
 
@@ -46,7 +50,8 @@ where
                         } else {
                             removed_idx.unwrap()
                         };
-                        self.buckets[idx] = SlotStatus::Occupied(Element::new(key, value));
+                        self.buckets[idx] = SlotStatus::Occupied(Element::new(key.clone(), value));
+                        self.keys.push(key);
                         self.size += 1;
                         return Ok(());
                     }
@@ -90,6 +95,7 @@ where
                             let value = item.value.clone();
                             self.buckets[vec_idx] = SlotStatus::Removed;
                             self.size -= 1;
+                            self.updated = false;
                             return Ok(value);
                         }
                     }
@@ -125,6 +131,32 @@ where
         }
 
         None
+    }
+    
+    /// # `set`
+    /// Takes a key and a value and sets the value at that key to the given value. Return `Ok(())` if successful, else `Err()` with the error message
+    pub fn set(&mut self, key: Key, value: Value) -> Result<(), &'static str> {
+        let hash = key.hash_code() % self.buckets.len();
+
+        // Linear probing starts
+        for idx in 0..self.buckets.len() {
+            let vec_idx = (hash + idx) % self.buckets.len();
+
+            if let Some(slot) = self.buckets.get_mut(vec_idx) {
+                match slot {
+                    SlotStatus::Empty => return Err("Such key does not exist"),
+                    SlotStatus::Occupied(item) => {
+                        if item.key == key {
+                            item.value = value;
+                            return Ok(());
+                        }
+                    }
+                    SlotStatus::Removed => {}
+                }
+            }
+        }
+
+        Err("Unexpected error occured")
     }
 
     /// # `resize`
@@ -162,6 +194,8 @@ where
         Ok(())
     }
 
+    
+
     /// # 'size_control`
     /// Checks whether the Map requires resizing and does so if the requirements are met.
     fn size_control(&mut self) -> Result<(), &'static str> {
@@ -175,5 +209,25 @@ where
             return self.resize(max * 2 - 1);
         }
         Ok(())
+    }
+
+    /// # `keys`
+    /// Return a vector of the keys currently in the map
+    pub fn keys(&mut self) -> &Vec<Key> {
+        if self.updated {
+            return &self.keys;
+        }
+
+        let mut new_keys: Vec<Key> = Vec::with_capacity(self.size);
+
+        for key in self.keys.iter() {
+            if let Some(_) = self.get(key.to_owned()) {
+                new_keys.push(key.to_owned());
+            }
+        }
+
+        self.keys = new_keys;
+        self.updated = true;
+        return &self.keys;
     }
 }

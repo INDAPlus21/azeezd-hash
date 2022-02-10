@@ -8,6 +8,7 @@ type SearchResult = Vec<(String, Option<Vec<DataItem>>)>;
 /// # `Table`
 /// A structure that holds represents a Table. The `Table` contains a header which gives names to each column.
 /// It also holds a `Map` which correlates a row name as `String` to a vector of `DataItem`s which represents a row in a table.
+#[derive(Debug)]
 pub struct Table {
     header_idx_map: Map<String, usize>,
     header: Vec<(String, DataItem)>,
@@ -40,21 +41,32 @@ impl Table {
     /// Takes a `&[String]` representing the name columns to extract and another `&[String]` representing which rows to extract those columns from.
     /// This returns a `SearchResult` which is a vector containing tuples of `(String, Option<Vec<DataItem>>)` in which string represents the row name
     /// and the `Option<Vec<DataItem>>` represents the extract column data from each row, if it exists.
-    pub fn get(&self, columns: &[String], rows: &[String]) -> SearchResult {
+    pub fn get(&mut self, columns: &[String], rows: &[String]) -> SearchResult {
         let mut result: SearchResult = SearchResult::new();
 
-        // Get indices of columns
-        let mut col_idx: Vec<usize> = Vec::with_capacity(columns.len());
-        for col in columns {
-            if let Some(idx) = self.header_idx_map.get(col.to_string()) {
-                col_idx.push(idx);
+        let mut col_idx: Vec<usize>;
+        if columns.contains(&"*".to_string()) && columns.len() == 1 {
+            col_idx = (0..self.header.len()).into_iter().collect();
+        } else {
+            // Get indices of columns
+            col_idx = Vec::with_capacity(columns.len());
+            for col in columns {
+                if let Some(idx) = self.header_idx_map.get(col.to_string()) {
+                    col_idx.push(idx);
+                }
             }
         }
 
+        let rows = if rows.contains(&"*".to_string()) && rows.len() == 1 {
+            (*self.map.keys()).clone()
+        } else {
+            rows.to_vec()
+        };
+        let size = rows.len();
         // Fetch columns, row by row (as requested)
-        for row in rows {
+        for row in rows.into_iter() {
             if let Some(r) = self.map.get(row.to_string()) {
-                let mut row_res: Vec<DataItem> = Vec::with_capacity(rows.len());
+                let mut row_res: Vec<DataItem> = Vec::with_capacity(size);
                 for idx in col_idx.iter() {
                     row_res.push(r[*idx].clone());
                 }
@@ -67,25 +79,55 @@ impl Table {
         result
     }
 
-    /// # `set`
+    pub fn set(&mut self, row_name: String, content: Vec<(String, String)>) -> Result<(), &'static str> {
+
+        if let Some(mut row) = self.map.get(row_name.clone()) {
+            for item in content.iter() {
+                if let Some(idx) = self.header_idx_map.get(item.0.to_string()) {
+                    let value = match self.header.get(idx).unwrap().1 {
+                        DataItem::Boolean(_) => DataItem::Boolean(content.get(idx).unwrap().1.parse::<bool>().unwrap()),
+                        DataItem::Float(_) => DataItem::Float(content.get(idx).unwrap().1.parse::<f32>().unwrap()),
+                        DataItem::UInteger(_) => DataItem::UInteger(content.get(idx).unwrap().1.parse::<u32>().unwrap()),
+                        DataItem::Integer(_) => DataItem::Integer(content.get(idx).unwrap().1.parse::<i32>().unwrap()),
+                        DataItem::Word(_) => DataItem::Word(content.get(idx).unwrap().1.to_string()),
+                    };
+                    row[idx] = value;
+                }
+            }
+            self.map.set(row_name, row)?;
+        }
+
+        Ok(())
+    }
+
+    /// # `new_row`
     /// Takes a row name as `&String` and its content as `Vec<DataItem>` and inserts that row into the table.
     /// This then returns `Result<(), &'static str>` where `OK(())` is if the item is inserted, otherwise `Err()` with the error.
     /// The content `Vec` must contain the content in order in which they appear in the header.
     /// That is if the header has [UInteger, Boolean, String] then the content `Vec` must be in that order, otherwise `Err()` is returned
     /// and the row is not inserted.
-    pub fn set(&mut self, row_name: &String, content: Vec<DataItem>) -> Result<(), &'static str> {
+    pub fn new_row(&mut self, row_name: String, content: Vec<String>) -> Result<(), &'static str> {
         // Incorrect row size check
-        if content.len() > self.header.len() {
-            return Err("There is more content than there exists place");
+        if content.len() != self.header.len() {
+            return Err("Incorrect amount of column data given");
         }
 
+        let mut converted_data: Vec<DataItem> = Vec::with_capacity(content.len());
         // Incorrect types in row check
         for idx in 0..content.len() {
-            if !content[idx].same_type_as(&self.header[idx].1) {
-                return Err("Types in row do not match those in header");
+            match self.header.get(idx).unwrap().1 {
+                DataItem::Boolean(_) => converted_data.push(DataItem::Boolean(content.get(idx).unwrap().parse::<bool>().unwrap())),
+                DataItem::Float(_) => converted_data.push(DataItem::Float(content.get(idx).unwrap().parse::<f32>().unwrap())),
+                DataItem::UInteger(_) => converted_data.push(DataItem::UInteger(content.get(idx).unwrap().parse::<u32>().unwrap())),
+                DataItem::Integer(_) => converted_data.push(DataItem::Integer(content.get(idx).unwrap().parse::<i32>().unwrap())),
+                DataItem::Word(_) => converted_data.push(DataItem::Word(content.get(idx).unwrap().clone())),
             }
         }
 
-        self.map.insert(row_name.to_string(), content)
+        self.map.insert(row_name.to_string(), converted_data)
+    }
+
+    pub fn remove_row(&mut self, row_name: &String) -> Result<Vec<DataItem>, &'static str> {
+        self.map.remove(row_name.clone())
     }
 }

@@ -5,12 +5,13 @@
 /// - Signed Integer (`i32`): `Integer`
 /// - Floating Point Number (`f32`): `Float`
 /// - Boolean (`bool`): `Boolean`
+/// - Spaceless String ('String'): `Word`
 #[derive(Debug, Clone, PartialEq)]
 pub enum DataItem {
     UInteger(u32),
     Integer(i32),
     Float(f32),
-    String(String),
+    Word(String),
     Boolean(bool),
 }
 

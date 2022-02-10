@@ -15,7 +15,9 @@ fn main() {
         let mut buffer = String::new();
         loop {
             input.read_line(&mut buffer);
-            query(&mut table, &buffer.trim_end().to_string());
+            if let Err(e) = query(&mut table, &buffer.trim_end().to_string()) {
+                println!("{}", e);
+            }
             buffer.clear();
         }
     } else {

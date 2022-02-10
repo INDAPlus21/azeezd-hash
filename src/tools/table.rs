@@ -20,17 +20,23 @@ pub struct Table {
 
 impl Table {
     /// # `new`
-    /// Takes a given `&[(String, DataItem)]` representing the name of each column and what type that column holds then returns
+    /// Takes a given `String` of a file path to a .csv file containg a table that follow this Table's rules (Read README)
     /// a `Result<Table, &'static str>` where `Ok(Table)` is return if no errors arise (such as giving columns with the same name).
     /// If there is an error it is returned as `Err()`
     pub fn new(path: String) -> Result<Table, &'static str> {
         let mut header_idx_map: Map<String, usize> = Map::new();
         let mut header: Vec<(String, DataItem)> = Vec::new();
 
+        // Get table file
         if let Ok(file) = File::open(path.clone()) {
             let mut lines = std::io::BufReader::new(file).lines();
+
+            // Read header of table
             if let Some(Ok(hdr)) = lines.next() {
+                // Read columns of header and prepare them for parsing
                 let columns = hdr.split(',').map(|data| data.trim().split_at(2));
+
+                // Go through each column and parse them into the header in this struct
                 for col in columns.enumerate() {
                     let col_data = match col.1 .0 {
                         "w:" => (col.1 .1.to_string(), DataItem::Word(String::new())),
@@ -53,10 +59,19 @@ impl Table {
                 map: Map::new(),
             };
 
+            // Go through each row and inserting  their data into this struct's map
             for line in lines {
-                let line = line.unwrap();
-                let mut col_data = line.split(',').map(|data| data.trim().to_string());
-                table.new_row(col_data.next().unwrap(), col_data.collect::<Vec<String>>())?;
+                if let Ok(line) = line {
+                    let mut col_data = line.split(',').map(|data| data.trim().to_string());
+                    table.new_row(
+                        if let Some(item) = col_data.next() {
+                            item
+                        } else {
+                            break;
+                        },
+                        col_data.collect::<Vec<String>>(),
+                    )?;
+                }
             }
 
             return Ok(table);
@@ -65,10 +80,24 @@ impl Table {
         Err("File not found")
     }
 
+    /// # `save`
+    /// Saves the current table to the file it was opened from.
     pub fn save(&mut self) -> Result<(), &'static str> {
-        let mut file = OpenOptions::new().create(true).write(true).truncate(true).open(self.path.clone()).unwrap();
+        let file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(self.path.clone());
 
+        if file.is_err() {
+            return Err("Error while opening the file to save");
+        }
+        let mut file = file.unwrap();
+
+        // Entire file saved here first
         let mut buffer = String::new();
+
+        // Write header
         for column in self.header.iter() {
             match column.1 {
                 DataItem::Boolean(_) => buffer.push_str("b:"),
@@ -79,8 +108,9 @@ impl Table {
             }
             buffer.push_str(format!("{},", column.0).as_str());
         }
-        buffer.pop();
+        buffer.pop(); // remove the last ,
 
+        // Get rows, iterate through them and save their data to the table
         let keys = self.map.keys().clone();
         for key in keys {
             buffer.push_str(format!("\n{}", key).as_str());
@@ -140,32 +170,57 @@ impl Table {
         result
     }
 
+    /// # `set`
+    /// Takes a given row name as `String` and a vector `Vec<(String, String)>` containing pairs of header name and what data they should change to.
     pub fn set(
         &mut self,
         row_name: String,
         content: Vec<(String, String)>,
     ) -> Result<(), &'static str> {
+        // Get Row
         if let Some(mut row) = self.map.get(row_name.clone()) {
+            // Every content given to change
             for item in content.iter() {
+                // Get index of header to change
                 if let Some(idx) = self.header_idx_map.get(item.0.to_string()) {
-                    let value = match self.header.get(idx).unwrap().1 {
-                        DataItem::Boolean(_) => {
-                            DataItem::Boolean(content.get(idx).unwrap().1.parse::<bool>().unwrap())
+                    // Get content to set the row data to
+                    if let Some(current_content) = content.get(idx) {
+                        // Get header data type
+                        if let Some(value) = self.header.get(idx) {
+                            let value = match value.1 {
+                                DataItem::Boolean(_) => DataItem::Boolean(
+                                    if let Ok(value) = current_content.1.parse::<bool>() {
+                                        value
+                                    } else {
+                                        return Err("Error parsing value as Boolean");
+                                    },
+                                ),
+                                DataItem::Float(_) => DataItem::Float(
+                                    if let Ok(value) = current_content.1.parse::<f32>() {
+                                        value
+                                    } else {
+                                        return Err("Error parsing value as Float");
+                                    },
+                                ),
+                                DataItem::UInteger(_) => DataItem::UInteger(
+                                    if let Ok(value) = current_content.1.parse::<u32>() {
+                                        value
+                                    } else {
+                                        return Err("Error parsing value as UInteger");
+                                    },
+                                ),
+                                DataItem::Integer(_) => DataItem::Integer(
+                                    if let Ok(value) = current_content.1.parse::<i32>() {
+                                        value
+                                    } else {
+                                        return Err("Error parsing value as Integer");
+                                    },
+                                ),
+                                DataItem::Word(_) => DataItem::Word(current_content.1.to_string()),
+                            };
+                            row[idx] = value;
                         }
-                        DataItem::Float(_) => {
-                            DataItem::Float(content.get(idx).unwrap().1.parse::<f32>().unwrap())
-                        }
-                        DataItem::UInteger(_) => {
-                            DataItem::UInteger(content.get(idx).unwrap().1.parse::<u32>().unwrap())
-                        }
-                        DataItem::Integer(_) => {
-                            DataItem::Integer(content.get(idx).unwrap().1.parse::<i32>().unwrap())
-                        }
-                        DataItem::Word(_) => {
-                            DataItem::Word(content.get(idx).unwrap().1.to_string())
-                        }
-                    };
-                    row[idx] = value;
+                    }
                 }
             }
             self.map.set(row_name, row)?;
@@ -175,7 +230,7 @@ impl Table {
     }
 
     /// # `new_row`
-    /// Takes a row name as `&String` and its content as `Vec<DataItem>` and inserts that row into the table.
+    /// Takes a row name as `&String` and its content as `Vec<String>` and inserts that row into the table.
     /// This then returns `Result<(), &'static str>` where `OK(())` is if the item is inserted, otherwise `Err()` with the error.
     /// The content `Vec` must contain the content in order in which they appear in the header.
     /// That is if the header has [UInteger, Boolean, String] then the content `Vec` must be in that order, otherwise `Err()` is returned
@@ -189,21 +244,45 @@ impl Table {
         let mut converted_data: Vec<DataItem> = Vec::with_capacity(content.len());
         // Incorrect types in row check
         for idx in 0..content.len() {
-            match self.header.get(idx).unwrap().1 {
-                DataItem::Boolean(_) => converted_data.push(DataItem::Boolean(
-                    content.get(idx).unwrap().parse::<bool>().unwrap(),
-                )),
-                DataItem::Float(_) => converted_data.push(DataItem::Float(
-                    content.get(idx).unwrap().parse::<f32>().unwrap(),
-                )),
-                DataItem::UInteger(_) => converted_data.push(DataItem::UInteger(
-                    content.get(idx).unwrap().parse::<u32>().unwrap(),
-                )),
-                DataItem::Integer(_) => converted_data.push(DataItem::Integer(
-                    content.get(idx).unwrap().parse::<i32>().unwrap(),
-                )),
-                DataItem::Word(_) => {
-                    converted_data.push(DataItem::Word(content.get(idx).unwrap().clone()))
+            if let Some(value) = self.header.get(idx) {
+                if let Some(item) = content.get(idx) {
+                    match value.1 {
+                        DataItem::Boolean(_) => converted_data.push(DataItem::Boolean(
+                            if let Ok(value) = item.parse::<bool>() {
+                                value
+                            } else {
+                                return Err("Error parsing value as Boolean");
+                            },
+                        )),
+                        DataItem::Float(_) => converted_data.push(DataItem::Float(
+                            if let Ok(value) = item.parse::<f32>() {
+                                value
+                            } else {
+                                return Err("Error parsing value as Float");
+                            },
+                        )),
+                        DataItem::UInteger(_) => converted_data.push(DataItem::UInteger(
+                            if let Ok(value) = item.parse::<u32>() {
+                                value
+                            } else {
+                                return Err("Error parsing value as UInteger");
+                            },
+                        )),
+                        DataItem::Integer(_) => converted_data.push(DataItem::Integer(
+                            if let Ok(value) = item.parse::<i32>() {
+                                value
+                            } else {
+                                return Err("Error parsing value as Integer");
+                            },
+                        )),
+                        DataItem::Word(_) => converted_data.push(DataItem::Word(
+                            if let Some(content) = content.get(idx) {
+                                content.clone()
+                            } else {
+                                return Err("Error parsing value as Word");
+                            },
+                        )),
+                    }
                 }
             }
         }
@@ -211,6 +290,8 @@ impl Table {
         self.map.insert(row_name.to_string(), converted_data)
     }
 
+    /// # `remove_row`
+    /// Takes a row name and removes it. Returns `Ok(Vec<DataItem>)` containing the row removed.
     pub fn remove_row(&mut self, row_name: &String) -> Result<Vec<DataItem>, &'static str> {
         self.map.remove(row_name.clone())
     }

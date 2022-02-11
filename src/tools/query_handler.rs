@@ -50,6 +50,7 @@ pub fn query(table: &mut Table, query: &String) -> Result<(), &'static str> {
         } else {
             return Err("Error parsing row name part of  SET command");
         }
+        return Ok(());
     // === DELETE ===
     } else if query.starts_with("DELETE") {
         table.remove_row(&query[6..].replace(" ", "").to_string())?;
@@ -77,6 +78,7 @@ pub fn query(table: &mut Table, query: &String) -> Result<(), &'static str> {
         };
 
         table.new_row(row_name, content)?;
+        return Ok(());
     } else if query.starts_with("SAVE") {
         table.save()?;
         println!("Saved!");

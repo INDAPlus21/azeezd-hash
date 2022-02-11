@@ -15,6 +15,9 @@ pub fn query(table: &mut Table, query: &String) -> Result<(), &'static str> {
             })
             .collect::<Vec<Vec<String>>>();
 
+        if args.len() < 2 {
+            return Err("The given query is incorrect");
+        }
         // Search the table for results then print it
         let result = table.get(&args[0], &args[1]);
         println!("{:?}", result);
@@ -50,6 +53,7 @@ pub fn query(table: &mut Table, query: &String) -> Result<(), &'static str> {
     // === DELETE ===
     } else if query.starts_with("DELETE") {
         table.remove_row(&query[6..].replace(" ", "").to_string())?;
+        return Ok(());
 
     // === INSERT ===
     } else if query.starts_with("INSERT") {

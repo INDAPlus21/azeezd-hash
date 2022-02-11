@@ -15,9 +15,12 @@ fn main() {
         let input = std::io::stdin();
         let mut buffer = String::new();
         loop {
-            input.read_line(&mut buffer);
-            if let Err(e) = query(&mut table, &buffer.trim_end().to_string()) {
-                println!("{}", e);
+            if let Ok(_) = input.read_line(&mut buffer) {
+                if let Err(e) = query(&mut table, &buffer.trim_end().to_string()) {
+                    println!("{}", e);
+                }
+            } else {
+                println!("Error while reading from stdin");
             }
             buffer.clear();
         }

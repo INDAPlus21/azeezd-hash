@@ -4,7 +4,8 @@ use std::{num::Wrapping, slice::from_raw_parts};
 /// Takes any struct or data type and returns its hash code as `usize`.
 /// The hash is preformed on every byte in the given data.
 /// Beware of hashing data holding memory addresses because that will create random hashes
-pub fn default_hash<T>(to_hash: &T) -> usize {
+/// (!!!) This is not used in the code anywhere. I Just put it in case I wanted to make other types or structs be hashable in a customizable way.
+pub fn _default_hash<T>(to_hash: &T) -> usize {
     let mut hash: Wrapping<usize> = Wrapping(0);
 
     // Unsafe.. ooooo... This will create the hash based on the bytes of the key

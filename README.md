@@ -15,12 +15,12 @@ Querying can be done through the commands below:
 |`GET <columns> FROM <rows>`| Prints the requested column data stored in the given rows. To get all columns or rows '`*`' can be typed instead.  | `GET Age, Program OF *`         |
 | `SET <column>=<value> OF <row>`| Sets the given data columns to the given values of a single given row         | `SET Age=10, Program=CDATE OF Bob`     |
 | `INSERT <row_name> : <value>, <value>...`| Inserts a new row into the table using the given data. NOTE! The data must be given in order according to the header and must be in the correct type. | `INSERT Bilbo : 111, CDATE` |
-| `DELETE <row_name>` | Deletes the row with the given row name` | `DELETE Bobby` |
+| `DELETE <row_name>` | Deletes the row with the given row name | `DELETE Bobby` |
 | `SAVE`              | Not technically a query. This command saves the table into the table it was opened from|
 | `ABORT`              | This command will terminate the process without saving. Use with caution if you do not want to lose unsaved progress. |
 
 # Creating your own table
-To create your own table, create a `.csv` file (it can be anything really but the file will be in "Comma Separated Values"-format, so be conventional).
+To create your own table, create a `.csv` file (it can be anything really but the file will be in "Comma Separated Values"-format). Note that the .csv file will be a little different. The header will have one less value than other rows because every first value in the non-header rows represents the key value of that row.
 
 Open your newly created file and add your desired header following these:
 
